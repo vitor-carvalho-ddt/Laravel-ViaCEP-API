@@ -1,5 +1,5 @@
 # Defining Local Arguments
-ARG PHP_VERSION=latest
+ARG PHP_VERSION=8.3-fpm
 # Base image Latest
 FROM php:${PHP_VERSION}
 
@@ -37,7 +37,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # pcntl                   -> Process Control support in PHP implements the Unix style of process creation, program execution, signal handling and process termination.
 # bcmath                  -> For arbitrary precision mathematics PHP offers BCMath which supports numbers of any size and precision up to 2147483647 (or 0x7FFFFFFF) decimal digits, if there is sufficient memory, represented as strings.
 # gd                      -> PHP is not limited to creating just HTML output. It can also be used to create and manipulate image files in a variety of different image formats, including GIF, PNG, JPEG, WBMP, and XPM. Even more conveniently, PHP can output image streams directly to a browser. You will need to compile PHP with the GD library of image functions for this to work.
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd sockets
 
 # Get latest Composer (dependency manager for PHP) - for composer.json and composer.lock dependencies
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -64,6 +64,9 @@ RUN mkdir -p /home/$user/.composer && \
 # The WORKDIR instruction sets the working directory for any 
 # RUN, CMD, ENTRYPOINT, COPY and ADD instructions that follow it in the Dockerfile.
 WORKDIR /var/www
+
+# Copy custom configurations PHP
+COPY docker-compose/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
 
 # The USER instruction sets the user name (or UID) and optionally 
 # the user group (or GID) to use as the default user and     group 
