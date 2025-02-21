@@ -1,5 +1,5 @@
 # Defining Local Arguments
-ARG PHP_VERSION=lastest
+ARG PHP_VERSION=latest
 # Base image Latest
 FROM php:${PHP_VERSION}
 
