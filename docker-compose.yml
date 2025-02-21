@@ -12,24 +12,54 @@ services:
     working_dir: /var/www/
     volumes:
       - ./:/var/www
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
     networks:
       - viacep
   
   db:
     image: mysql:8.0
-    container_name: viacep-db
+    platform: linux/x86_64
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_USER: ${DB_USERNAME}
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
     volumes:
-      - ./mysql-data:/docker-entrypoint-initdb.d
+      - ./mysql-data:/var/lib/mysql
     ports:
       - "3306:3306"
+    networks:
+      - viacep
+
+  nginx:
+    image: nginx:alpine
+    container_name: viacep-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - viacep
+
+
+  # PHPMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    platform: linux/x86_64
+    restart: unless-stopped
+    ports:
+        - "8080:80"
+    environment:
+        PMA_HOST: db
+        PMA_PORT: 3306
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    networks:
+        - viacep
 
 networks:
   viacep:
