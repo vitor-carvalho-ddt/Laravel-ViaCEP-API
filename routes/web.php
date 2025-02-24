@@ -6,6 +6,7 @@ use \App\Http\Controllers\CepController;
 
 Route::middleware('auth')->group(function() {
     Route::resource('ceps', CepController::class);
+    Route::post('/ceps/store-multiple', [CepController::class, 'storeMultiple'])->name('ceps.storeMultiple');
     Route::get('/', [CepController::class,'index']);
 });
 
