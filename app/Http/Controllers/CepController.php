@@ -51,6 +51,12 @@ class CepController extends Controller
 
         $data = $response->json();
 
+        // Check if the CEP already exists for the user
+        $existingCep = Cep::where('user_id', auth()->id())->where('cep', $data['cep'] ?? $request->cep)->first();
+        if ($existingCep) {
+            return back()->withErrors(['cep' => 'Você já possui esse CEP salvo!']);
+        }
+
         $cep = new Cep([
             'user_id'    => auth()->id(),
             'cep'        => $data['cep'] ?? $request->cep,
@@ -71,6 +77,57 @@ class CepController extends Controller
         $cep->save();
 
         return redirect()->route('ceps.index')->with('success', 'CEP salvo com sucesso!');
+    }
+
+    public function storeMultiple(Request $request)
+    {
+        $request->validate([
+            'uf' => 'required|max:2',
+            'localidade' => 'required|min:3|max:50',
+            'logradouro' => 'required|min:3|max:50',
+        ]);
+
+        $uf = $request->uf;
+        $localidade = $request->localidade;
+        $logradouro = $request->logradouro;
+
+        // Laravel HTTP Client
+        $response = Http::get("https://viacep.com.br/ws/{$uf}/{$localidade}/{$logradouro}/json/");
+
+        if ($response->failed() || isset($response['erro'])) {
+            return back()->withErrors(['cep' => 'Dados inválidos!']);
+        }
+
+        $data = $response->json();
+
+        foreach ($data as $cepData) {
+            // Check if the CEP already exists for the user
+            $existingCep = Cep::where('user_id', auth()->id())->where('cep', $cepData['cep'] ?? null)->first();
+            if ($existingCep) {
+                continue; // Skip this CEP if it already exists
+            }
+
+            $cep = new Cep([
+                'user_id'    => auth()->id(),
+                'cep'        => $cepData['cep'] ?? null,
+                'logradouro' => $cepData['logradouro'] ?? null,
+                'complemento'=> $cepData['complemento'] ?? null,
+                'unidade'    => $cepData['unidade'] ?? null,
+                'bairro'     => $cepData['bairro'] ?? null,
+                'localidade' => $cepData['localidade'] ?? null,
+                'uf'         => $cepData['uf'] ?? null,
+                'estado'     => $cepData['estado'] ?? null,
+                'regiao'     => $cepData['regiao'] ?? null,
+                'ibge'       => $cepData['ibge'] ?? null,
+                'gia'        => $cepData['gia'] ?? null,
+                'ddd'        => $cepData['ddd'] ?? null,
+                'siafi'      => $cepData['siafi'] ?? null
+            ]);
+
+            $cep->save();
+        }
+
+        return redirect()->route('ceps.index')->with('success', 'CEPs salvos com sucesso!');
     }
 
     public function destroy(Cep $cep)
