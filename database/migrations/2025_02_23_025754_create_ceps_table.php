@@ -29,6 +29,9 @@ return new class extends Migration
             $table->string('siafi')->nullable();
 
             $table->timestamps();
+
+            // Add unique constraint on user_id and cep
+            $table->unique(['user_id', 'cep']);
         });
     }
 
