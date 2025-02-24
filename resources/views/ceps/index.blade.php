@@ -19,8 +19,9 @@
             <thead>
                 <tr class="border-b border-gray-200">
                     <th class="px-4 py-2">CEP</th>
-                    <th class="px-4 py-2">Cidade</th>
                     <th class="px-4 py-2">UF</th>
+                    <th class="px-4 py-2">Cidade</th>
+                    <th class="px-4 py-2">Logradouro</th>
                     <th class="px-4 py-2">Ações</th>
                 </tr>
             </thead>
@@ -28,8 +29,9 @@
                 @foreach($ceps as $cep)
                     <tr class="border-b border-gray-200">
                         <td class="px-4 py-2">{{ $cep->cep }}</td>
-                        <td class="px-4 py-2">{{ $cep->localidade }}</td>
                         <td class="px-4 py-2">{{ $cep->uf }}</td>
+                        <td class="px-4 py-2">{{ $cep->localidade }}</td>
+                        <td class="px-4 py-2">{{ $cep->logradouro }}</td>
                         <td class="px-4 py-2 space-x-2">
                             {{-- Show link --}}
                             <a href="{{ route('ceps.show', $cep->id) }}" class="text-blue-500 hover:underline">Detalhes</a>
@@ -50,6 +52,11 @@
         <a href="{{ route('ceps.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             Pesquisar novo CEP
         </a>
+    </div>
+
+    <!-- Pagination links -->
+    <div class="mt-4">
+        {{ $ceps->links() }}
     </div>
 </div>
 @endsection

@@ -13,7 +13,7 @@ class CepController extends Controller
     public function index()
     {
         // Retrieve CEPs for the logged-in user only
-        $ceps = Cep::where('user_id', auth()->id())->get();
+        $ceps = Cep::where('user_id', auth()->id())->paginate(10);
 
         return view('ceps.index', compact('ceps'));
     }
