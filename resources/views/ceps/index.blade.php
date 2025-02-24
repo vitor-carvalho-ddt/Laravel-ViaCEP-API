@@ -12,10 +12,35 @@
         </div>
     @endif
 
-    @if (is_null($ceps) or $ceps->isEmpty())
+    {{-- Search form --}}
+    <form action="{{ route('ceps.index') }}" method="GET" class="mb-4">
+        <div class="flex items-center space-x-2">
+            <select name="field" class="border border-gray-300 p-2 rounded text-black">
+                <option value="cep" {{ request('field') == 'cep' ? 'selected' : '' }}>CEP</option>
+                <option value="uf" {{ request('field') == 'uf' ? 'selected' : '' }}>UF</option>
+                <option value="localidade" {{ request('field') == 'localidade' ? 'selected' : '' }}>Cidade</option>
+                <option value="logradouro" {{ request('field') == 'logradouro' ? 'selected' : '' }}>Logradouro</option>                
+            </select>
+            <input
+                type="text"
+                name="search"
+                placeholder="Buscar"
+                class="border border-gray-300 p-2 w-full rounded text-black"
+                value="{{ request('search') }}"
+            >
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Buscar
+            </button>
+            <a href="{{ route('ceps.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                Limpar
+            </a>
+        </div>
+    </form>
+
+    @if ($ceps->isEmpty())
         <p>Você não possui nenhum CEP salvo ainda!</p>
     @else
-        <table class="">
+        <table>
             <thead>
                 <tr class="border-b border-gray-200">
                     <th class="px-4 py-2">CEP</th>
@@ -56,7 +81,7 @@
 
     <!-- Pagination links -->
     <div class="mt-4">
-        {{ $ceps->links() }}
+        {{ $ceps->appends(request()->query())->links() }}
     </div>
 </div>
 @endsection

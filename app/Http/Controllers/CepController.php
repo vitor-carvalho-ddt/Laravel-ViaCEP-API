@@ -10,10 +10,17 @@ use App\Models\Cep;
 class CepController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        // Retrieve CEPs for the logged-in user only
-        $ceps = Cep::where('user_id', auth()->id())->paginate(10);
+        $query = Cep::where('user_id', auth()->id());
+
+        if ($request->has('search') && $request->has('field')) {
+        $search = $request->input('search');
+        $field = $request->input('field');
+        $query->where($field, 'like', "%{$search}%");
+    }
+
+        $ceps = $query->paginate(10);
 
         return view('ceps.index', compact('ceps'));
     }
