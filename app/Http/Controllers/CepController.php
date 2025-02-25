@@ -3,22 +3,28 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Http;
 
-
 use Illuminate\Http\Request;
 use App\Models\Cep;
+use App\Repositories\Interfaces\CepRepositoryInterface;
 
 class CepController extends Controller
 {
+    protected $cepRepository;
+
+    public function __construct(CepRepositoryInterface $cepRepository)
+    {
+        $this->cepRepository = $cepRepository;
+    }
 
     public function index(Request $request)
     {
-        $query = Cep::where('user_id', auth()->id());
+        $query = $this->cepRepository->allQueryBuilder(auth()->id());
 
         if ($request->has('search') && $request->has('field')) {
-        $search = $request->input('search');
-        $field = $request->input('field');
-        $query->where($field, 'like', "%{$search}%");
-    }
+            $search = $request->input('search');
+            $field = $request->input('field');
+            $query = $query->where($field, 'like', "%{$search}%");
+        }
 
         $ceps = $query->paginate(10);
 
@@ -40,7 +46,6 @@ class CepController extends Controller
         return view('ceps.create');
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -59,12 +64,12 @@ class CepController extends Controller
         $data = $response->json();
 
         // Check if the CEP already exists for the user
-        $existingCep = Cep::where('user_id', auth()->id())->where('cep', $data['cep'] ?? $request->cep)->first();
+        $existingCep = $this->cepRepository->find($data['cep'] ?? $request->cep, auth()->id());
         if ($existingCep) {
-            return back()->withErrors(['cep' => 'Você já possui esse CEP salvo!']);
+            return back()->withErrors(['cep' => 'You already have this CEP saved.']);
         }
 
-        $cep = new Cep([
+        $this->cepRepository->create([
             'user_id'    => auth()->id(),
             'cep'        => $data['cep'] ?? $request->cep,
             'logradouro' => $data['logradouro'] ?? null,
@@ -80,8 +85,6 @@ class CepController extends Controller
             'ddd'        => $data['ddd'] ?? null,
             'siafi'      => $data['siafi'] ?? null
         ]);
-
-        $cep->save();
 
         return redirect()->route('ceps.index')->with('success', 'CEP salvo com sucesso!');
     }
@@ -109,14 +112,14 @@ class CepController extends Controller
 
         foreach ($data as $cepData) {
             // Check if the CEP already exists for the user
-            $existingCep = Cep::where('user_id', auth()->id())->where('cep', $cepData['cep'] ?? null)->first();
+            $existingCep = $this->cepRepository->find($cepData['cep'] ?? $request->cep, auth()->id());
             if ($existingCep) {
                 continue; // Skip this CEP if it already exists
             }
 
-            $cep = new Cep([
+            $this->cepRepository->create([
                 'user_id'    => auth()->id(),
-                'cep'        => $cepData['cep'] ?? null,
+                'cep'        => $cepData['cep'] ?? $request->cep,
                 'logradouro' => $cepData['logradouro'] ?? null,
                 'complemento'=> $cepData['complemento'] ?? null,
                 'unidade'    => $cepData['unidade'] ?? null,
@@ -130,8 +133,6 @@ class CepController extends Controller
                 'ddd'        => $cepData['ddd'] ?? null,
                 'siafi'      => $cepData['siafi'] ?? null
             ]);
-
-            $cep->save();
         }
 
         return redirect()->route('ceps.index')->with('success', 'CEPs salvos com sucesso!');
@@ -140,9 +141,8 @@ class CepController extends Controller
     public function destroy(Cep $cep)
     {
         abort_if($cep->user_id !== auth()->id(), 403);
-        $cep->delete();
+        $this->cepRepository->delete($cep->id, auth()->id());
 
         return redirect()->route('ceps.index')->with('success', 'CEP deletado com sucesso!');
     }
-
 }
