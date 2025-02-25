@@ -1,42 +1,30 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Http;
 
 use Illuminate\Http\Request;
 use App\Models\Cep;
-use App\Repositories\Interfaces\CepRepositoryInterface;
+use App\Services\CepService;
 
 class CepController extends Controller
 {
-    protected $cepRepository;
+    protected $cepService;
 
-    public function __construct(CepRepositoryInterface $cepRepository)
+    public function __construct(CepService $cepService)
     {
-        $this->cepRepository = $cepRepository;
+        $this->cepService = $cepService;
     }
 
     public function index(Request $request)
     {
-        $query = $this->cepRepository->allQueryBuilder(auth()->id());
-
-        if ($request->has('search') && $request->has('field')) {
-            $search = $request->input('search');
-            $field = $request->input('field');
-            $query = $query->where($field, 'like', "%{$search}%");
-        }
-
-        $ceps = $query->paginate(10);
+        $ceps = $this->cepService->getAllCeps(auth()->id(), $request->input('search'), $request->input('field'));
 
         return view('ceps.index', compact('ceps'));
     }
 
     public function show(Cep $cep)
     {
-        // Ensure only the owner can view it
-        if ($cep->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
-        }
+        $cep = $this->cepService->getCepDetails($cep, auth()->id());
 
         return view('ceps.show', compact('cep'));
     }
@@ -48,101 +36,30 @@ class CepController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'cep' => 'required|max:9',
-        ]);
+        $result = $this->cepService->createCep($request);
 
-        $cleanCep = preg_replace('/\D/', '', $request->cep);
-
-        // Laravel HTTP Client
-        $response = Http::get("https://viacep.com.br/ws/{$cleanCep}/json/");
-        
-        if ($response->failed() || isset($response['erro'])) {
-            return back()->withErrors(['cep' => 'CEP not found or invalid.']);
+        if (isset($result['error'])) {
+            return back()->withErrors(['cep' => $result['error']]);
         }
 
-        $data = $response->json();
-
-        // Check if the CEP already exists for the user
-        $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $data['cep'] ?? $request->cep, userId: auth()->id());
-        if ($existingCep) {
-            return back()->withErrors(['cep' => 'You already have this CEP saved.']);
-        }
-
-        $this->cepRepository->create([
-            'user_id'    => auth()->id(),
-            'cep'        => $data['cep'] ?? $request->cep,
-            'logradouro' => $data['logradouro'] ?? null,
-            'complemento'=> $data['complemento'] ?? null,
-            'unidade'    => $data['unidade'] ?? null,
-            'bairro'     => $data['bairro'] ?? null,
-            'localidade' => $data['localidade'] ?? null,
-            'uf'         => $data['uf'] ?? null,
-            'estado'     => $data['estado'] ?? null,
-            'regiao'     => $data['regiao'] ?? null,
-            'ibge'       => $data['ibge'] ?? null,
-            'gia'        => $data['gia'] ?? null,
-            'ddd'        => $data['ddd'] ?? null,
-            'siafi'      => $data['siafi'] ?? null
-        ]);
-
-        return redirect()->route('ceps.index')->with('success', 'CEP salvo com sucesso!');
+        return redirect()->route('ceps.index')->with('success', $result['success']);
     }
 
     public function storeMultiple(Request $request)
     {
-        $request->validate([
-            'uf' => 'required|max:2',
-            'localidade' => 'required|min:3|max:50',
-            'logradouro' => 'required|min:3|max:50',
-        ]);
+        $result = $this->cepService->createMultipleCeps($request);
 
-        $uf = $request->uf;
-        $localidade = $request->localidade;
-        $logradouro = $request->logradouro;
-
-        // Laravel HTTP Client
-        $response = Http::get("https://viacep.com.br/ws/{$uf}/{$localidade}/{$logradouro}/json/");
-
-        if ($response->failed() || isset($response['erro'])) {
-            return back()->withErrors(['cep' => 'Dados inválidos!']);
+        if (isset($result['error'])) {
+            return back()->withErrors(['cep' => $result['error']]);
         }
 
-        $data = $response->json();
-
-        foreach ($data as $cepData) {
-            // Check if the CEP already exists for the user
-            $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());
-            if ($existingCep) {
-                continue; // Skip this CEP if it already exists
-            }
-
-            $this->cepRepository->create([
-                'user_id'    => auth()->id(),
-                'cep'        => $cepData['cep'] ?? $request->cep,
-                'logradouro' => $cepData['logradouro'] ?? null,
-                'complemento'=> $cepData['complemento'] ?? null,
-                'unidade'    => $cepData['unidade'] ?? null,
-                'bairro'     => $cepData['bairro'] ?? null,
-                'localidade' => $cepData['localidade'] ?? null,
-                'uf'         => $cepData['uf'] ?? null,
-                'estado'     => $cepData['estado'] ?? null,
-                'regiao'     => $cepData['regiao'] ?? null,
-                'ibge'       => $cepData['ibge'] ?? null,
-                'gia'        => $cepData['gia'] ?? null,
-                'ddd'        => $cepData['ddd'] ?? null,
-                'siafi'      => $cepData['siafi'] ?? null
-            ]);
-        }
-
-        return redirect()->route('ceps.index')->with('success', 'CEPs salvos com sucesso!');
+        return redirect()->route('ceps.index')->with('success', $result['success']);
     }
 
     public function destroy(Cep $cep)
     {
-        abort_if($cep->user_id !== auth()->id(), 403);
-        $this->cepRepository->delete($cep->id, auth()->id());
+        $result = $this->cepService->deleteCep($cep, auth()->id());
 
-        return redirect()->route('ceps.index')->with('success', 'CEP deletado com sucesso!');
+        return redirect()->route('ceps.index')->with('success', $result['success']);
     }
 }

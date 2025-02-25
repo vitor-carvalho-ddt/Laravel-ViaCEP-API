@@ -47,7 +47,6 @@ services:
     networks:
       - viacep
 
-
   # PHPMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -61,7 +60,7 @@ services:
         MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
     networks:
         - viacep
-
+        
 networks:
   viacep:
     driver: bridge
