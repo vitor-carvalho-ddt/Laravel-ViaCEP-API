@@ -11,9 +11,15 @@ class CepRepository implements CepRepositoryInterface
     {
         return Cep::where('user_id', $userId);
     }
+
     public function all($userId)
     {
         return Cep::where('user_id', $userId)->get();
+    }
+
+    public function findByColumn($column, $value, $userId)
+    {
+        return Cep::where("{$column}", $value)->where('user_id', $userId)->first();
     }
 
     public function find($id, $userId)

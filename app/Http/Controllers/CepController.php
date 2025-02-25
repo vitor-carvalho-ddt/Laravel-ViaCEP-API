@@ -64,7 +64,7 @@ class CepController extends Controller
         $data = $response->json();
 
         // Check if the CEP already exists for the user
-        $existingCep = $this->cepRepository->find($data['cep'] ?? $request->cep, auth()->id());
+        $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $data['cep'] ?? $request->cep, userId: auth()->id());
         if ($existingCep) {
             return back()->withErrors(['cep' => 'You already have this CEP saved.']);
         }
@@ -112,7 +112,7 @@ class CepController extends Controller
 
         foreach ($data as $cepData) {
             // Check if the CEP already exists for the user
-            $existingCep = $this->cepRepository->find($cepData['cep'] ?? $request->cep, auth()->id());
+            $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());
             if ($existingCep) {
                 continue; // Skip this CEP if it already exists
             }
