@@ -20,9 +20,9 @@ class CepService
         $this->ViaCEPService = $ViaCEPService;
     }
 
-    public function getAllCeps($userId, $search = null, $field = null)
+    public function getAllCeps($userId, $search = null, $field = null): mixed
     {
-        $query = $this->cepRepository->allQueryBuilder($userId);
+        $query = $this->cepRepository->allQueryBuilder(userId: $userId);
 
         if ($search && $field) {
             $query = $query->where($field, 'like', "%{$search}%");
@@ -31,20 +31,20 @@ class CepService
         return $query->paginate(10);
     }
 
-    public function getCepDetails(Cep $cep, $userId)
+    public function getCepDetails(Cep $cep, $userId): Cep
     {
         if ($cep->user_id !== $userId) {
-            abort(403, 'Unauthorized');
+            abort(code: 403, message: 'Unauthorized');
         }
 
         return $cep;
     }
 
-    public function createCep(CreateCepRequest $request)
+    public function createCep(CreateCepRequest $request): array
     {
-        $cleanCep = preg_replace('/\D/', '', $request->cep);
+        $cleanCep = preg_replace(pattern: '/\D/', replacement: '', subject: $request->cep);
 
-        $response = $this->ViaCEPService->getCEPDataUsingCEP($cleanCep);
+        $response = $this->ViaCEPService->getCEPDataUsingCEP(cep: $cleanCep);
         
         if ($response->failed() || isset($response['erro'])) {
             return ['error' => 'CEP not found or invalid.'];
@@ -52,12 +52,12 @@ class CepService
 
         $data = $response->json();
 
-        $existingCep = $this->cepRepository->findByColumn('cep', $data['cep'] ?? $request->cep, auth()->id());
+        $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $data['cep'] ?? $request->cep, userId: auth()->id());
         if ($existingCep) {
             return ['error' => 'You already have this CEP saved.'];
         }
 
-        $this->cepRepository->create([
+        $this->cepRepository->create(data: [
             'user_id'    => auth()->id(),
             'cep'        => $data['cep'] ?? $request->cep,
             'logradouro' => $data['logradouro'] ?? null,
@@ -77,19 +77,13 @@ class CepService
         return ['success' => 'CEP salvo com sucesso!'];
     }
 
-    public function createMultipleCeps(CreateMultipleCepsRequest $request)
+    public function createMultipleCeps(CreateMultipleCepsRequest $request): array
     {
-        $request->validate([
-            'uf' => 'required|max:2',
-            'localidade' => 'required|min:3|max:50',
-            'logradouro' => 'required|min:3|max:50',
-        ]);
-
         $state = $request->uf;
         $city = $request->localidade;
         $address = $request->logradouro;
         
-        $response = $this->ViaCEPService->getCEPDataUsingAddress($state, $city, $address);
+        $response = $this->ViaCEPService->getCEPDataUsingAddress(state: $state, city: $city, address: $address);
 
         if ($response->failed() || isset($response['erro'])) {
             return ['error' => 'Dados inválidos!'];
@@ -98,12 +92,12 @@ class CepService
         $data = $response->json();
 
         foreach ($data as $cepData) {
-            $existingCep = $this->cepRepository->findByColumn('cep', $cepData['cep'] ?? $request->cep, auth()->id());
+            $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());
             if ($existingCep) {
                 continue;
             }
 
-            $this->cepRepository->create([
+            $this->cepRepository->create(data: [
                 'user_id'    => auth()->id(),
                 'cep'        => $cepData['cep'] ?? $request->cep,
                 'logradouro' => $cepData['logradouro'] ?? null,
@@ -124,13 +118,13 @@ class CepService
         return ['success' => 'CEPs salvos com sucesso!'];
     }
 
-    public function deleteCep(Cep $cep, $userId)
+    public function deleteCep(Cep $cep, $userId): array
     {
         if ($cep->user_id !== $userId) {
-            abort(403);
+            abort(code: 403);
         }
 
-        $this->cepRepository->delete($cep->id, $userId);
+        $this->cepRepository->delete(id: $cep->id, userId: $userId);
 
         return ['success' => 'CEP deletado com sucesso!'];
     }
