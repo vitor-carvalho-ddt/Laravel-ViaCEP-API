@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Http\Requests\CreateCepRequest;
+use App\Http\Requests\CreateMultipleCepsRequest;
 use Illuminate\Support\Facades\Http;
 use App\Repositories\Interfaces\CepRepositoryInterface;
 use Illuminate\Http\Request;
@@ -38,12 +40,8 @@ class CepService
         return $cep;
     }
 
-    public function createCep(Request $request)
+    public function createCep(CreateCepRequest $request)
     {
-        $request->validate([
-            'cep' => 'required|max:9',
-        ]);
-
         $cleanCep = preg_replace('/\D/', '', $request->cep);
 
         $response = $this->ViaCEPService->getCEPDataUsingCEP($cleanCep);
@@ -79,7 +77,7 @@ class CepService
         return ['success' => 'CEP salvo com sucesso!'];
     }
 
-    public function createMultipleCeps(Request $request)
+    public function createMultipleCeps(CreateMultipleCepsRequest $request)
     {
         $request->validate([
             'uf' => 'required|max:2',
