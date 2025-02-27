@@ -2,13 +2,21 @@
 
 namespace App\Services;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
 class ViaCEPService
 {
-    public function getCEPDataUsingCEP($cep){
-        return Http::get("https://viacep.com.br/ws/{$cep}/json/");
-    }
+    public function getCEPData(string $url): array {
+        try{
+            $response = Http::timeout(seconds: 5)->get(url: $url);
+            
+            if($response->failed()){
+                return ['error' => 'Dados do CEP inválidos!'];
+            }
 
-    public function getCEPDataUsingAddress($state, $city, $address){
-        return Http::get("https://viacep.com.br/ws/{$state}/{$city}/{$address}/json/");
+            return $response->json();
+        }
+        catch(ConnectionException $e){
+            return ['error' => 'Tempo limite excedido ao tentar se comunicar com o servidor ViaCEP!'];
+        }
     }
 }

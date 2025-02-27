@@ -4,23 +4,19 @@ namespace App\Services;
 
 use App\Http\Requests\CreateCepRequest;
 use App\Http\Requests\CreateMultipleCepsRequest;
-use Illuminate\Support\Facades\Http;
 use App\Repositories\Interfaces\CepRepositoryInterface;
-use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Cep;
 use App\Services\ViaCEPService;
 
 class CepService
 {
-    protected $cepRepository;
 
-    public function __construct(CepRepositoryInterface $cepRepository, ViaCEPService $ViaCEPService)
+    public function __construct(private readonly CepRepositoryInterface $cepRepository, private readonly ViaCEPService $ViaCEPService)
     {
-        $this->cepRepository = $cepRepository;
-        $this->ViaCEPService = $ViaCEPService;
     }
 
-    public function getAllCeps($userId, $search = null, $field = null): mixed
+    public function getAllCeps($userId, $search = null, $field = null): LengthAwarePaginator
     {
         $query = $this->cepRepository->allQueryBuilder(userId: $userId);
 
@@ -43,18 +39,18 @@ class CepService
     public function createCep(CreateCepRequest $request): array
     {
         $cleanCep = preg_replace(pattern: '/\D/', replacement: '', subject: $request->cep);
+        $url = "viacep.com.br/ws/{$cleanCep}/json/";
+        $response = $this->ViaCEPService->getCEPData(url: $url);
 
-        $response = $this->ViaCEPService->getCEPDataUsingCEP(cep: $cleanCep);
-        
-        if ($response->failed() || isset($response['erro'])) {
-            return ['error' => 'CEP not found or invalid.'];
+        if (isset($response['error'])) {
+            return ['error' => $response['error']];
         }
 
-        $data = $response->json();
+        $data = $response;
 
         $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $data['cep'] ?? $request->cep, userId: auth()->id());
         if ($existingCep) {
-            return ['error' => 'You already have this CEP saved.'];
+            return ['error' => 'Você já possui este CEP salvo!'];
         }
 
         $this->cepRepository->create(data: [
@@ -83,13 +79,14 @@ class CepService
         $city = $request->localidade;
         $address = $request->logradouro;
         
-        $response = $this->ViaCEPService->getCEPDataUsingAddress(state: $state, city: $city, address: $address);
+        $url = "https://viacep.com.br/ws/{$state}/{$city}/{$address}/json/";
+        $response = $this->ViaCEPService->getCEPData(url: $url);
 
-        if ($response->failed() || isset($response['erro'])) {
-            return ['error' => 'Dados inválidos!'];
+        if (isset($response['erro'])) {
+            return ['error' => $response['error']];
         }
 
-        $data = $response->json();
+        $data = $response;
 
         foreach ($data as $cepData) {
             $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());

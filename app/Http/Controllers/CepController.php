@@ -13,16 +13,13 @@ use App\Http\Requests\CreateMultipleCepsRequest;
 
 class CepController extends Controller
 {
-    protected $cepService;
-
-    public function __construct(CepService $cepService)
+    public function __construct(private readonly CepService $cepService)
     {
-        $this->cepService = $cepService;
     }
 
     public function index(Request $request): View
     {
-        $ceps = $this->cepService->getAllCeps(userId: auth()->id(), search: $request->input('search'), field: $request->input(key: 'field'));
+        $ceps = $this->cepService->getAllCeps(userId: auth()->id(), search: $request->input(key: 'search'), field: $request->input(key: 'field'));
 
         return view(view: 'ceps.index', data: compact(var_name: 'ceps'));
     }
