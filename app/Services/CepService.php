@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use App\Http\Requests\CreateCepRequest;
-use App\Http\Requests\CreateMultipleCepsRequest;
-use App\Repositories\Interfaces\CepRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Cep;
 use App\Services\ViaCEPService;
+use App\Http\Requests\CreateCepRequest;
+use App\Http\Requests\CreateMultipleCepsRequest;
+use App\Repositories\Interfaces\CepRepositoryInterface;
 
 class CepService
 {
@@ -30,6 +31,7 @@ class CepService
     public function getCepDetails(Cep $cep, $userId): Cep
     {
         if ($cep->user_id !== $userId) {
+            Log::warning(message: 'Unauthorized access attempt', context: ['user_id' => $userId, 'cep_id' => $cep->id]);
             abort(code: 403, message: 'Unauthorized');
         }
 
@@ -43,6 +45,7 @@ class CepService
         $response = $this->ViaCEPService->getCEPData(url: $url);
 
         if (isset($response['error'])) {
+            Log::error(message: 'Failed to create CEP', context: ['cep' => $cleanCep, 'response' => $response->body()]);
             return ['error' => $response['error']];
         }
 
@@ -50,6 +53,7 @@ class CepService
 
         $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $data['cep'] ?? $request->cep, userId: auth()->id());
         if ($existingCep) {
+            Log::info(message: 'CEP already exists', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
             return ['error' => 'Você já possui este CEP salvo!'];
         }
 
@@ -70,6 +74,7 @@ class CepService
             'siafi'      => $data['siafi'] ?? null
         ]);
 
+        Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
         return ['success' => 'CEP salvo com sucesso!'];
     }
 
@@ -83,6 +88,7 @@ class CepService
         $response = $this->ViaCEPService->getCEPData(url: $url);
 
         if (isset($response['erro'])) {
+            Log::error(message: 'Failed to create multiple CEPs', context: ['state' => $state, 'city' => $city, 'address' => $address, 'response' => $response->body()]);
             return ['error' => $response['error']];
         }
 
@@ -91,6 +97,7 @@ class CepService
         foreach ($data as $cepData) {
             $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());
             if ($existingCep) {
+                Log::info(message: 'CEP already exists', context: ['cep' => $cepData['cep'], 'user_id' => auth()->id()]);
                 continue;
             }
 
@@ -112,17 +119,20 @@ class CepService
             ]);
         }
 
+        Log::info(message: 'Multiple CEPs created successfully', context: ['state' => $state, 'city' => $city, 'address' => $address, 'user_id' => auth()->id()]);
         return ['success' => 'CEPs salvos com sucesso!'];
     }
 
     public function deleteCep(Cep $cep, $userId): array
     {
         if ($cep->user_id !== $userId) {
+            Log::warning(message: 'Unauthorized delete attempt', context: ['user_id' => $userId, 'cep_id' => $cep->id]);
             abort(code: 403);
         }
 
         $this->cepRepository->delete(id: $cep->id, userId: $userId);
 
+        Log::info(message: 'CEP deleted successfully', context: ['cep_id' => $cep->id, 'user_id' => $userId]);
         return ['success' => 'CEP deletado com sucesso!'];
     }
 }
