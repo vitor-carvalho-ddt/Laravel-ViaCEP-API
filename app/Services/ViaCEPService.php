@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\ConnectionException;
 class ViaCEPService
 {
-    public function getCEPData(string $url): arrasiy {
+    public function getCEPData(string $url): array {
         try{
             $response = Http::timeout(seconds: 5)->get(url: $url);
             
