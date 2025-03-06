@@ -45,7 +45,7 @@ class CepService
         $response = $this->ViaCEPService->getCEPData(url: $url);
 
         if (isset($response['error'])) {
-            Log::error(message: 'Failed to create CEP', context: ['cep' => $cleanCep, 'response' => $response->body()]);
+            Log::error(message: 'Failed to create CEP', context: ['cep' => $cleanCep, 'response' => $response]);
             return ['error' => $response['error']];
         }
 
@@ -88,7 +88,7 @@ class CepService
         $response = $this->ViaCEPService->getCEPData(url: $url);
 
         if (isset($response['erro'])) {
-            Log::error(message: 'Failed to create multiple CEPs', context: ['state' => $state, 'city' => $city, 'address' => $address, 'response' => $response->body()]);
+            Log::error(message: 'Failed to create multiple CEPs', context: ['state' => $state, 'city' => $city, 'address' => $address, 'response' => $response]);
             return ['error' => $response['error']];
         }
 
