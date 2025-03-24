@@ -75,6 +75,13 @@ class CepService
         ]);
 
         Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
+        $ceps = data['cep'];
+        $emailData = [
+            'email' => auth()->user()->email,
+            'title' => "ViaCEP CEPs Adicionados",
+            'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$ceps",
+        ];
+        EmailService::sendEmail($emailData);
         return ['success' => 'CEP salvo com sucesso!'];
     }
 
@@ -83,7 +90,7 @@ class CepService
         $state = $request->uf;
         $city = $request->localidade;
         $address = $request->logradouro;
-        
+
         $url = "https://viacep.com.br/ws/{$state}/{$city}/{$address}/json/";
         $response = $this->ViaCEPService->getCEPData(url: $url);
 
@@ -94,6 +101,7 @@ class CepService
 
         $data = $response;
 
+        $ceps = [];
         foreach ($data as $cepData) {
             $existingCep = $this->cepRepository->findByColumn(column: 'cep', value: $cepData['cep'] ?? $request->cep, userId: auth()->id());
             if ($existingCep) {
@@ -117,9 +125,17 @@ class CepService
                 'ddd'        => $cepData['ddd'] ?? null,
                 'siafi'      => $cepData['siafi'] ?? null
             ]);
+            $ceps[] = $cepData['cep'];
         }
 
         Log::info(message: 'Multiple CEPs created successfully', context: ['state' => $state, 'city' => $city, 'address' => $address, 'user_id' => auth()->id()]);
+        $cepsString = implode(", ",$ceps);
+        $emailData = [
+            'email' => auth()->user()->email,
+            'title' => "ViaCEP CEPs Adicionados",
+            'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$cepsString",
+        ];
+        EmailService::sendEmail($emailData);
         return ['success' => 'CEPs salvos com sucesso!'];
     }
 
