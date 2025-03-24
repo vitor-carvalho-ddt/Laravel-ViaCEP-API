@@ -13,12 +13,13 @@ class SendEmailCEP extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $emailData;
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($details)
     {
-        //
+        $this->emailData = $details;
     }
 
     /**
@@ -27,7 +28,7 @@ class SendEmailCEP extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Send Email C E P',
+            subject: $this->emailData['title'],
         );
     }
 
@@ -37,7 +38,7 @@ class SendEmailCEP extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.emailviacep',
         );
     }
 
