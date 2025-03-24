@@ -1,11 +1,14 @@
 <?php
+
+namespace App\Jobs;
+
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SendEmailTest;
+use App\Mail\SendEmailCEP;
 
 class SendEmailJob implements ShouldQueue
 {
@@ -20,6 +23,6 @@ class SendEmailJob implements ShouldQueue
 
     public function handle()
     {
-        Mail::to($this->details['email'])->send(new SendEmailTest($this->details));
+        Mail::to($this->details['email'])->send(new SendEmailCEP($this->details));
     }
 }
