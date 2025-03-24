@@ -9,14 +9,32 @@ class EmailService
 {
     public static function sendEmail(array $data)
     {
-        $details = [
-            'email' => $data['email'],
-            'title' => $data['title'],
-            'message' => $data['message'],
-        ];
+        try
+        {
+            $details = [
+                'email' => $data['email'],
+                'title' => $data['title'],
+                'message' => $data['message'],
+            ];
 
-        SendEmailJob::dispatch($details);
+            SendEmailJob::dispatch($details);
 
-        Log::info(message: 'Email sent successfully!', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
+            Log::info('Email queued successfully', [
+                'to' => $data['email'],
+                'subject' => $data['title'],
+                'user_id' => auth()->id() ?? 'guest'
+            ]);
+
+            return true;
+        }catch (\Exception $e){
+            Log::error('Failed to queue email', [
+                'to' => $data['email'] ?? 'unknown',
+                'subject' => $data['title'] ?? 'unknown',
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id() ?? 'guest'
+            ]);
+
+            return false;
+        }
     }
 }
