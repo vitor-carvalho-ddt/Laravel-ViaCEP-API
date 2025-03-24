@@ -74,15 +74,20 @@ class CepService
             'siafi'      => $data['siafi'] ?? null
         ]);
 
-        Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
-        $ceps = data['cep'];
-        $emailData = [
-            'email' => auth()->user()->email,
-            'title' => "ViaCEP CEPs Adicionados",
-            'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$ceps",
-        ];
-        EmailService::sendEmail($emailData);
-        return ['success' => 'CEP salvo com sucesso!'];
+        if($cep){
+
+            Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
+            $ceps = data['cep'];
+            $emailData = [
+                'email' => auth()->user()->email,
+                'title' => "ViaCEP CEPs Adicionados",
+                'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$ceps",
+            ];
+            EmailService::sendEmail($emailData);
+            return ['success' => 'CEP salvo com sucesso!'];
+        }else{
+            return ['error' => 'Você já possui este CEP salvo!'];
+        }
     }
 
     public function createMultipleCeps(CreateMultipleCepsRequest $request): array
@@ -128,15 +133,19 @@ class CepService
             $ceps[] = $cepData['cep'];
         }
 
-        Log::info(message: 'Multiple CEPs created successfully', context: ['state' => $state, 'city' => $city, 'address' => $address, 'user_id' => auth()->id()]);
-        $cepsString = implode(", ",$ceps);
-        $emailData = [
-            'email' => auth()->user()->email,
-            'title' => "ViaCEP CEPs Adicionados",
-            'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$cepsString",
-        ];
-        EmailService::sendEmail($emailData);
-        return ['success' => 'CEPs salvos com sucesso!'];
+        if($ceps){
+            Log::info(message: 'Multiple CEPs created successfully', context: ['state' => $state, 'city' => $city, 'address' => $address, 'user_id' => auth()->id()]);
+            $cepsString = implode(", ",$ceps);
+            $emailData = [
+                'email' => auth()->user()->email,
+                'title' => "ViaCEP CEPs Adicionados",
+                'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$cepsString",
+            ];
+            EmailService::sendEmail($emailData);
+            return ['success' => 'CEPs salvos com sucesso!'];
+        }else{
+            return ['error' => 'Você já possui estes CEPs salvos!'];
+        }
     }
 
     public function deleteCep(Cep $cep, $userId): array
