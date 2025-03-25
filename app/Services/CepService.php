@@ -74,20 +74,15 @@ class CepService
             'siafi'      => $data['siafi'] ?? null
         ]);
 
-        if($cep){
-
-            Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
-            $ceps = data['cep'];
-            $emailData = [
-                'email' => auth()->user()->email,
-                'title' => "ViaCEP CEPs Adicionados",
-                'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$ceps",
-            ];
-            EmailService::sendEmail($emailData);
-            return ['success' => 'CEP salvo com sucesso!'];
-        }else{
-            return ['error' => 'Você já possui este CEP salvo!'];
-        }
+        Log::info(message: 'CEP created successfully', context: ['cep' => $data['cep'], 'user_id' => auth()->id()]);
+        $ceps = $data['cep'];
+        $emailData = [
+            'email' => auth()->user()->email,
+            'title' => "ViaCEP CEPs Adicionados",
+            'message' => "Os seguintes CEPs foram adicionados com sucesso:\n$ceps",
+        ];
+        EmailService::sendEmail($emailData);
+        return ['success' => 'CEP salvo com sucesso!'];
     }
 
     public function createMultipleCeps(CreateMultipleCepsRequest $request): array
